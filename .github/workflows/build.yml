@@ -49,13 +49,41 @@ jobs:
         run: |
           set -euo pipefail
           DEB="$(find packages -maxdepth 1 -name '*.deb' -print -quit)"
-          mkdir -p verify-deb
-          dpkg-deb -x "$DEB" verify-deb
-          BIN="verify-deb/Applications/AppleSigner.app/AppleSigner"
-          test -f "$BIN"
-          python3 - "$BIN" <<'PY'
-          import collections, re, subprocess, sys
-          output = subprocess.check_output(["otool", "-l", sys.argv[1]], text=True)
+          python3 - "$DEB" <<'PY'
+          import collections, io, re, subprocess, sys, tarfile, tempfile
+          from pathlib import Path
+
+          deb = Path(sys.argv[1]).read_bytes()
+          offset = 8
+          data = None
+          while offset + 60 <= len(deb):
+              header = deb[offset:offset + 60]
+              if header[58:60] != b"`\n":
+                  raise SystemExit("Invalid Debian ar archive header")
+              name = header[:16].decode("ascii").strip().rstrip("/")
+              size = int(header[48:58].decode("ascii").strip())
+              payload = deb[offset + 60:offset + 60 + size]
+              if name.startswith("data.tar"):
+                  data = payload
+                  break
+              offset += 60 + size + (size % 2)
+          if data is None:
+              raise SystemExit("No data.tar member found in Debian package")
+
+          binary = None
+          with tarfile.open(fileobj=io.BytesIO(data), mode="r:*") as archive:
+              for member in archive.getmembers():
+                  if member.name.endswith("Applications/AppleSigner.app/AppleSigner"):
+                      binary = archive.extractfile(member)
+                      if binary:
+                          break
+              if binary is None:
+                  raise SystemExit("AppleSigner executable not found in final deb")
+              with tempfile.NamedTemporaryFile(prefix="AppleSigner-", delete=False) as output_file:
+                  output_file.write(binary.read())
+                  binary_path = output_file.name
+
+          output = subprocess.check_output(["otool", "-l", binary_path], text=True)
           paths = []
           lines = output.splitlines()
           for i, line in enumerate(lines):
