@@ -434,19 +434,7 @@
     }
     self.certificateSubject = summary ?: @"未知证书";
     NSDate *expiry = nil;
-    if (cert) {
-        CFErrorRef valuesError = NULL;
-        CFArrayRef keys = (__bridge CFArrayRef)@[( __bridge id)kSecOIDX509V1ValidityNotAfter];
-        CFDictionaryRef valuesRef = SecCertificateCopyValues(cert, keys, &valuesError);
-        if (valuesRef) {
-            NSDictionary *values = CFBridgingRelease(valuesRef);
-            NSDictionary *notAfter = values[(__bridge id)kSecOIDX509V1ValidityNotAfter];
-            id dateValue = notAfter[(__bridge id)kSecPropertyKeyValue];
-            if ([dateValue isKindOfClass:NSDate.class]) expiry = dateValue;
-        }
-        if (valuesError) CFRelease(valuesError);
-        CFRelease(cert);
-    }
+    if (cert) CFRelease(cert);
     NSString *expiryText = expiry ? [NSDateFormatter localizedStringFromDate:expiry dateStyle:NSDateFormatterMediumStyle timeStyle:NSDateFormatterNoStyle] : @"未知";
     self.certificateValue.text = [NSString stringWithFormat:@"%@\n%@ · 到期 %@", url.lastPathComponent, summary ?: @"证书身份已读取", expiryText];
     self.activityValue.text = @"P12 身份读取成功；可与描述文件核对证书。私钥未持久化。";
