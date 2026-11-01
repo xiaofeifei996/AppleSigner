@@ -51,12 +51,20 @@
 }
 - (UIButton *)button:(NSString *)title action:(SEL)action {
     UIButton *b = [UIButton buttonWithType:UIButtonTypeSystem]; b.translatesAutoresizingMaskIntoConstraints = NO;
-    [b setTitle:title forState:UIControlStateNormal]; b.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
-    b.backgroundColor = UIColor.secondarySystemGroupedBackgroundColor; b.layer.cornerRadius = 12;
-    b.contentEdgeInsets = UIEdgeInsetsMake(13, 15, 13, 15);
+    UIButtonConfiguration *configuration = [UIButtonConfiguration plainButtonConfiguration];
+    configuration.title = title;
+    configuration.titleTextAttributesTransformer = ^NSDictionary<NSAttributedStringKey,id> *(NSDictionary<NSAttributedStringKey,id> *attributes) {
+        NSMutableDictionary *updated = [attributes mutableCopy];
+        updated[NSFontAttributeName] = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+        return updated;
+    };
+    configuration.baseBackgroundColor = UIColor.secondarySystemGroupedBackgroundColor;
+    configuration.contentInsets = NSDirectionalEdgeInsetsMake(13, 15, 13, 15);
+    b.configuration = configuration;
+    b.layer.cornerRadius = 12; b.clipsToBounds = YES;
     [b addTarget:self action:action forControlEvents:UIControlEventTouchUpInside]; return b;
 }
-- (UIView *)card:(NSString *)title value:(UILabel **)value {
+- (UIView *)card:(NSString *)title value:(UILabel * __strong *)value {
     UIView *v = [UIView new]; v.translatesAutoresizingMaskIntoConstraints = NO;
     v.backgroundColor = UIColor.secondarySystemGroupedBackgroundColor; v.layer.cornerRadius = 15;
     UILabel *h = [self label:title font:[UIFont systemFontOfSize:14 weight:UIFontWeightSemibold] color:UIColor.labelColor];
@@ -117,7 +125,8 @@
 }
 - (void)pickExtension:(NSString *)ext kind:(NSString *)kind {
     self.pendingImportType = kind; UTType *t = [UTType typeWithFilenameExtension:ext];
-    UIDocumentPickerViewController *p = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:(t ? @[t] : @[UTType.data]) asCopy:YES];
+    if (!t) t = [UTType typeWithIdentifier:@"public.data"];
+    UIDocumentPickerViewController *p = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:(t ? @[t] : @[]) asCopy:YES];
     p.delegate = self; p.allowsMultipleSelection = NO; [self presentViewController:p animated:YES completion:nil];
 }
 - (void)extractIPA {
@@ -215,8 +224,7 @@
     for(NSDictionary *item in items) {
         NSString *exe=item[@"Executable"];
         NSString *bundle=item[@"Bundle"];
-        NSURL *bundleURL=[unpacked URLByAppendingPathComponent:bundle isDirectory:YES];
-        // Locate executable under its bundle, including nested paths discovered from Info.plist.
+            // Locate executable under its bundle, including nested paths discovered from Info.plist.
         NSDirectoryEnumerator *en=[[NSFileManager defaultManager] enumeratorAtURL:unpacked includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsHiddenFiles errorHandler:nil];
         NSURL *binary=nil;
         for(NSURL *candidate in en) if([candidate.lastPathComponent isEqualToString:exe] && [[candidate.URLByDeletingLastPathComponent.lastPathComponent lowercaseString] hasSuffix:@".app"]) { binary=candidate; break; }
@@ -288,7 +296,8 @@
 - (void)importProfiles {
     self.pendingImportType = @"profiles";
     UTType *t = [UTType typeWithFilenameExtension:@"mobileprovision"];
-    UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:(t ? @[t] : @[UTType.data]) asCopy:YES];
+    if (!t) t = [UTType typeWithIdentifier:@"public.data"];
+    UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:(t ? @[t] : @[]) asCopy:YES];
     picker.delegate = self;
     picker.allowsMultipleSelection = YES;
     [self presentViewController:picker animated:YES completion:nil];
@@ -426,7 +435,7 @@
     self.certificateSubject = summary ?: @"未知证书";
     NSDate *expiry = nil;
     if (cert) {
-        CFDateRef date = SecCertificateCopyNotValidAfter(cert);
+        CFDateRef date = SecCertificateCopyNotValidAfterDate(cert);
         if (date) expiry = CFBridgingRelease(date);
         CFRelease(cert);
     }
