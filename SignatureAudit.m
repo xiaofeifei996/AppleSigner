@@ -1,4 +1,6 @@
 #import "SignatureAudit.h"
+#import "ProfileInspector.h"
+#import "MachOSignatureInspector.h"
 #import <CommonCrypto/CommonDigest.h>
 
 
@@ -267,8 +269,7 @@ static NSDictionary *ASAuditSpecialSlots(NSURL *bundleURL, NSArray *machOItems) 
         specialFailed += [sa[@"Mismatched"] unsignedIntegerValue];
         specialUnavailable += [sa[@"Unavailable"] unsignedIntegerValue];
         specialUnsupported += [sa[@"Unsupported"] unsignedIntegerValue];
-        [lines addObject:[NSString stringWithFormat:@"%@ %@\n  签名文件结构：%@\n  _CodeSignature：%@\n  CodeResources：%@\n  embedded.mobileprovision：%@\n  Special slots：%@（核对 %lu，失败 %lu，缺失 %lu，不支持 %lu）
-  密码学验证：未执行",
+        [lines addObject:[NSString stringWithFormat:@"%@ %@\n  签名文件结构：%@\n  _CodeSignature：%@\n  CodeResources：%@\n  embedded.mobileprovision：%@\n  Special slots：%@（核对 %lu，失败 %lu，缺失 %lu，不支持 %lu）\n  密码学验证：未执行",
             b[@"Type"], b[@"Name"], b[@"SignatureArtifactStatus"], [b[@"HasSignatureDirectory"] boolValue] ? @"存在" : @"缺失",
             b[@"CodeResourcesStatus"], b[@"EmbeddedProfileStatus"], sa[@"Status"],
             (unsigned long)[sa[@"Checked"] unsignedIntegerValue], (unsigned long)[sa[@"Mismatched"] unsignedIntegerValue],
