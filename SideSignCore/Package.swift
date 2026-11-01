@@ -13,7 +13,7 @@ let package = Package(
     targets: [
         .target(
             name: "AppleSignerCore",
-            dependencies: [.product(name: "SideSign", package: "SideSign")],
+            dependencies: [.product(name: "SideSign", package: "sidesign")],
             path: "Sources"
         )
     ],
