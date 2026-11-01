@@ -1,5 +1,6 @@
 #import "AppDelegate.h"
-#import "ViewController.h"\n#import "IPAExtractor.h"
+#import "ViewController.h"
+#import "IPAExtractor.h"
 @implementation AppDelegate
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     NSURL *documents=[NSFileManager.defaultManager URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask].firstObject;
