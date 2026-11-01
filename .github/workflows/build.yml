@@ -9,6 +9,7 @@ on:
       - 'Makefile'
       - 'control'
       - 'layout/**'
+      - 'scripts/**'
       - 'roothide.entitlements'
       - '.github/workflows/build.yml'
   workflow_dispatch:
@@ -36,11 +37,43 @@ jobs:
           grep -q 'THEOS_PACKAGE_SCHEME = roothide' Makefile
           grep -q 'Architecture: iphoneos-arm64e' control
           test -f roothide.entitlements
+          test -f scripts/fix-roothide-rpaths.py
 
       - name: Build RootHide package
         run: |
           make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
           test -n "$(find packages -maxdepth 1 -name '*.deb' -print -quit)"
+
+      - name: Verify packaged Mach-O has no duplicate LC_RPATH
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEB="$(find packages -maxdepth 1 -name '*.deb' -print -quit)"
+          mkdir -p verify-deb
+          dpkg-deb -x "$DEB" verify-deb
+          BIN="verify-deb/Applications/AppleSigner.app/AppleSigner"
+          test -f "$BIN"
+          python3 - "$BIN" <<'PY'
+          import collections, re, subprocess, sys
+          output = subprocess.check_output(["otool", "-l", sys.argv[1]], text=True)
+          paths = []
+          lines = output.splitlines()
+          for i, line in enumerate(lines):
+              if line.strip() == "cmd LC_RPATH":
+                  for candidate in lines[i + 1:i + 5]:
+                      match = re.match(r"\s*path (.+?) \(offset \d+\)", candidate)
+                      if match:
+                          paths.append(match.group(1))
+                          break
+          duplicates = [p for p, n in collections.Counter(paths).items() if n > 1]
+          if duplicates:
+              raise SystemExit("Duplicate LC_RPATH found in final deb: " + ", ".join(duplicates))
+          expected = "@loader_path/.jbroot/Library/Frameworks"
+          if paths.count(expected) != 1:
+              raise SystemExit(f"Expected one {expected!r}, found {paths.count(expected)}")
+          print("Verified unique LC_RPATH entries in packaged executable:")
+          print("\n".join(paths))
+          PY
 
       - name: Upload RootHide Debian package
         uses: actions/upload-artifact@v4
