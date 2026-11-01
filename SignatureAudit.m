@@ -196,6 +196,7 @@ static NSDictionary *ASAuditSpecialSlots(NSURL *bundleURL, NSArray *machOItems) 
         @"Name": name, @"Path": url.path, @"Type": kind,
         @"HasSignatureDirectory": @(hasSigDir),
         @"HasCodeResources": @(hasResources),
+        @"CodeResourceEntryCount": @(resourceCount),
         @"CodeResourcesStatus": resourceStatus,
         @"CodeResourcesHashAudit": resourceHashAudit ?: @{},
         @"HasEmbeddedProfile": @(hasProfile),
