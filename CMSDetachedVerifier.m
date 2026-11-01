@@ -129,7 +129,7 @@ static BOOL ASVHasOID(NSData *tlv, const uint8_t *oid, NSUInteger oidLen) {
     NSData *sd=ASVBody(ci[1],t,b);
     NSArray *fields=ASVChildren(sd,0x30);
     if(fields.count<5){if(error)*error=ASVErr(5,@"SignedData 字段不足");return nil;}
-    NSUInteger vo=0,vb=0; ASVTLV versionTLV;
+    NSUInteger vb=0; ASVTLV versionTLV;
     if(!ASVGet(fields[0],&versionTLV,&vb)||versionTLV.tag!=0x02||
        ![ASVBody(fields[0],versionTLV,vb) isEqual:[NSData dataWithBytes:"\x01" length:1]]) {
         if(error)*error=ASVErr(20,@"SignedData version 不是当前支持的 v1");return nil;
@@ -174,9 +174,8 @@ static BOOL ASVHasOID(NSData *tlv, const uint8_t *oid, NSUInteger oidLen) {
         if(error)*error=ASVErr(25,@"SignerInfo digestAlgorithm 与 SHA-256 不匹配");return nil;
     }
     NSData *sid=ASVSIDFromSigner(si[1]);
-    NSUInteger ao=0;ASVTLV at;NSUInteger ab;
+    ASVTLV at;NSUInteger ab;
     if(!ASVGet(si[3],&at,&ab)){if(error)*error=ASVErr(11,@"signedAttrs 编码错误");return nil;}
-    NSData *attrsContent=ASVBody(si[3],at,ab);
     NSMutableData *attrsDER=[NSMutableData dataWithData:si[3]];
     ((uint8_t *)attrsDER.mutableBytes)[0]=0x31;
     NSArray *attributeItems=ASVChildren(attrsDER,0x31);
@@ -201,7 +200,7 @@ static BOOL ASVHasOID(NSData *tlv, const uint8_t *oid, NSUInteger oidLen) {
     NSData *actualMD=[NSData dataWithBytes:digest length:sizeof(digest)];
     if(!expectedMD||![expectedMD isEqual:actualMD]){if(error)*error=ASVErr(12,@"messageDigest 与原始内容不匹配");return nil;}
     NSData *matchingCert=nil;
-    NSUInteger co=0;ASVTLV ct;NSUInteger cb;
+    ASVTLV ct;NSUInteger cb;
     if(!ASVGet(certField,&ct,&cb)){if(error)*error=ASVErr(13,@"证书集合编码错误");return nil;}
     NSData *certBytes=ASVBody(certField,ct,cb);NSUInteger cp=0;
     NSData *previousCert=nil;
@@ -222,7 +221,7 @@ static BOOL ASVHasOID(NSData *tlv, const uint8_t *oid, NSUInteger oidLen) {
     if(!pub){if(error)*error=ASVErr(15,@"无法从签名者证书提取公钥");return nil;}
     NSArray *sigAlg=ASVChildren(si[4],0x30);
     if(sigAlg.count<1){CFRelease(pub);if(error)*error=ASVErr(16,@"签名算法标识错误");return nil;}
-    NSUInteger oo=0;ASVTLV ot;NSUInteger ob;
+    ASVTLV ot;NSUInteger ob;
     if(!ASVGet(sigAlg[0],&ot,&ob)||ot.tag!=0x06){CFRelease(pub);if(error)*error=ASVErr(17,@"签名算法 OID 缺失");return nil;}
     NSData *oid=ASVBody(sigAlg[0],ot,ob);
     const uint8_t rsaOID[]={0x2A,0x86,0x48,0x86,0xF7,0x0D,0x01,0x01,0x01};
