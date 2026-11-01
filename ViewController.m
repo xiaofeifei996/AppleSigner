@@ -435,8 +435,16 @@
     self.certificateSubject = summary ?: @"未知证书";
     NSDate *expiry = nil;
     if (cert) {
-        CFDateRef date = SecCertificateCopyNotValidAfterDate(cert);
-        if (date) expiry = CFBridgingRelease(date);
+        CFErrorRef valuesError = NULL;
+        CFArrayRef keys = (__bridge CFArrayRef)@[( __bridge id)kSecOIDX509V1ValidityNotAfter];
+        CFDictionaryRef valuesRef = SecCertificateCopyValues(cert, keys, &valuesError);
+        if (valuesRef) {
+            NSDictionary *values = CFBridgingRelease(valuesRef);
+            NSDictionary *notAfter = values[(__bridge id)kSecOIDX509V1ValidityNotAfter];
+            id dateValue = notAfter[(__bridge id)kSecPropertyKeyValue];
+            if ([dateValue isKindOfClass:NSDate.class]) expiry = dateValue;
+        }
+        if (valuesError) CFRelease(valuesError);
         CFRelease(cert);
     }
     NSString *expiryText = expiry ? [NSDateFormatter localizedStringFromDate:expiry dateStyle:NSDateFormatterMediumStyle timeStyle:NSDateFormatterNoStyle] : @"未知";
