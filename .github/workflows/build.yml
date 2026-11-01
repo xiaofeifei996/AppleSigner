@@ -6,6 +6,8 @@ on:
     paths:
       - '**/*.m'
       - '**/*.h'
+      - 'SideSignCore/**'
+      - 'SIDESIGN-INTEGRATION.md'
       - 'Makefile'
       - 'control'
       - 'layout/**'
@@ -31,6 +33,14 @@ jobs:
           bash -c "$(curl -fsSL https://raw.githubusercontent.com/roothide/theos/master/bin/install-theos)"
           test -f "$HOME/theos/makefiles/common.mk"
           echo "$HOME/theos/bin" >> "$GITHUB_PATH"
+
+      - name: Validate SideSign Swift package for iOS
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcode-select -p
+          swift package --package-path SideSignCore resolve
+          swift build --package-path SideSignCore --triple arm64-apple-ios15.0 --sdk "$(xcrun --sdk iphoneos --show-sdk-path)"
 
       - name: Verify RootHide build configuration
         run: |
