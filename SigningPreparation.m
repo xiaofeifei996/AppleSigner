@@ -45,7 +45,7 @@
         NSString *bundlePattern=appPattern;
         NSString *teamPrefix=[NSString stringWithFormat:@"%@.",team ?: @""];
         if ([bundlePattern hasPrefix:teamPrefix]) bundlePattern=[bundlePattern substringFromIndex:teamPrefix.length];
-        BOOL match=[self pattern:bundlePattern withBundleID:bundleID];
+        BOOL match=[self pattern:bundlePattern matches:bundleID];
         NSMutableDictionary *item=[@{@"Type":type,@"BundleIdentifier":bundleID,
             @"ProfileAppIDPattern":appPattern ?: @"",@"TeamIdentifier":team ?: @"",
             @"ProfileCompatible":@(match),@"Status":match?@"Template generated":@"Separate profile required"} mutableCopy];
