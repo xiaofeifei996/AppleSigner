@@ -2,7 +2,7 @@ THEOS ?= $(HOME)/theos
 ARCHS = arm64e
 TARGET = iphone:clang:latest:15.0
 THEOS_PACKAGE_SCHEME = roothide
-PACKAGE_VERSION = 1.41.0
+PACKAGE_VERSION = 1.41.1
 
 include $(THEOS)/makefiles/common.mk
 
@@ -15,6 +15,11 @@ AppleSigner_CODESIGN_FLAGS = -Sroothide.entitlements
 AppleSigner_INSTALL_PATH = /Applications
 
 include $(THEOS_MAKE_PATH)/application.mk
+
+# Normalize RootHide's loader paths after Theos stages the app but before
+# dpkg packages it. Duplicate LC_RPATH commands make dyld abort at launch.
+after-AppleSigner-stage::
+	python3 scripts/fix-roothide-rpaths.py "$(THEOS_STAGING_DIR)$(AppleSigner_INSTALL_PATH)/AppleSigner.app/AppleSigner" "roothide.entitlements"
 
 after-install::
 	install.exec "uicache -p /Applications/AppleSigner.app || true"
