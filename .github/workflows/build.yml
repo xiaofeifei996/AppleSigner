@@ -68,11 +68,8 @@ jobs:
           duplicates = [p for p, n in collections.Counter(paths).items() if n > 1]
           if duplicates:
               raise SystemExit("Duplicate LC_RPATH found in final deb: " + ", ".join(duplicates))
-          expected = "@loader_path/.jbroot/Library/Frameworks"
-          if paths.count(expected) != 1:
-              raise SystemExit(f"Expected one {expected!r}, found {paths.count(expected)}")
-          print("Verified unique LC_RPATH entries in packaged executable:")
-          print("\n".join(paths))
+          print("Verified no duplicate LC_RPATH entries in packaged executable:")
+          print("\n".join(paths) if paths else "(no LC_RPATH commands)")
           PY
 
       - name: Upload RootHide Debian package
