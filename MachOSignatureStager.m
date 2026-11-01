@@ -15,6 +15,7 @@ static void W32(uint8_t *p,uint32_t v,BOOL le) {
     NSData *orig=[NSData dataWithContentsOfURL:exeURL options:NSDataReadingMappedIfSafe error:error];
     if(!sb || !orig) return nil;
     const uint8_t *sp=sb.bytes; const uint8_t *b=orig.bytes; NSUInteger n=orig.length;
+    NSMutableData *copy = nil; uint8_t *dst = NULL;
     if(sb.length<20 || R32(sp,NO)!=0xfade0cc0 || R32(sp+4,NO)!=sb.length || R32(sp+8,NO)<1) {
         if(error)*error=[NSError errorWithDomain:@"AppleSigner.Stager" code:1 userInfo:@{NSLocalizedDescriptionKey:@"输入不是有效的 SuperBlob"}]; return nil;
     }
@@ -45,7 +46,7 @@ static void W32(uint8_t *p,uint32_t v,BOOL le) {
     if(oldOff%16!=0) {
         if(error)*error=[NSError errorWithDomain:@"AppleSigner.Stager" code:4 userInfo:@{NSLocalizedDescriptionKey:@"原签名区未按 16 字节对齐；拒绝写入"}]; return nil;
     }
-    NSMutableData *copy=[orig mutableCopy]; uint8_t *dst=copy.mutableBytes;
+    copy=[orig mutableCopy]; dst=copy.mutableBytes;
     memset(dst+oldOff,0,oldSize); memcpy(dst+oldOff,sp,sb.length);
     W32(dst+sizeField,(uint32_t)sb.length,little);
     if(![copy writeToURL:outURL options:NSDataWritingAtomic error:error]) return nil;
