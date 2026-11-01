@@ -45,7 +45,7 @@ static NSData *ASVFindAttribute(NSData *attrs, const uint8_t *oid, NSUInteger oi
     NSData *target=[NSData dataWithBytes:oid length:oidLen];
     for(NSData *item in items){
         NSArray *pair=ASVChildren(item,0x30);if(pair.count!=2)continue;
-        NSUInteger o=0;ASVTLV t;NSUInteger b;
+        ASVTLV t;NSUInteger b;
         if(!ASVGet(pair[0],&t,&b)||t.tag!=0x06)continue;
         if(![ASVBody(pair[0],t,b) isEqual:target])continue;
         NSArray *vals=ASVChildren(pair[1],0x31);if(!vals.count)continue;
@@ -93,21 +93,21 @@ static NSData *ASVIssuerSerialFromCert(NSData *cert) {
     NSArray *certParts=ASVChildren(cert,0x30);if(certParts.count!=3)return nil;
     NSArray *tbs=ASVChildren(certParts[0],0x30);if(!tbs)return nil;
     NSUInteger i=0;
-    if(tbs.count && ((const uint8_t *)tbs[0].bytes)[0]==0xA0)i++;
+    if(tbs.count && ((const uint8_t *)((NSData *)tbs[0]).bytes)[0]==0xA0)i++;
     if(i+3>=tbs.count)return nil;
     NSData *serial=tbs[i++], *issuer=tbs[i+1];
     if(!ASVIsCanonicalPositiveInteger(serial))return nil;
-    return [NSString stringWithFormat:@"%@|%@",[serial base64EncodedStringWithOptions:0],
-            [issuer base64EncodedStringWithOptions:0]].dataUsingEncoding:NSUTF8StringEncoding;
+    return [[NSString stringWithFormat:@"%@|%@",[serial base64EncodedStringWithOptions:0],
+            [issuer base64EncodedStringWithOptions:0]] dataUsingEncoding:NSUTF8StringEncoding];
 }
 static NSData *ASVSIDFromSigner(NSData *sid) {
     NSArray *p=ASVChildren(sid,0x30);if(p.count!=2)return nil;
-    return [NSString stringWithFormat:@"%@|%@",[p[1] base64EncodedStringWithOptions:0],
-            [p[0] base64EncodedStringWithOptions:0]].dataUsingEncoding:NSUTF8StringEncoding;
+    return [[NSString stringWithFormat:@"%@|%@",[p[1] base64EncodedStringWithOptions:0],
+            [p[0] base64EncodedStringWithOptions:0]] dataUsingEncoding:NSUTF8StringEncoding];
 }
 
 static BOOL ASVHasOID(NSData *tlv, const uint8_t *oid, NSUInteger oidLen) {
-    NSUInteger o=0,b=0; ASVTLV t;
+    NSUInteger b=0; ASVTLV t;
     return ASVGet(tlv,&t,&b) && t.tag==0x06 &&
         [ASVBody(tlv,t,b) isEqual:[NSData dataWithBytes:oid length:oidLen]];
 }
@@ -153,7 +153,7 @@ static BOOL ASVHasOID(NSData *tlv, const uint8_t *oid, NSUInteger oidLen) {
     }
     NSData *certField=nil,*signerField=nil;
     for(NSUInteger i=3;i<fields.count;i++){
-        if(((const uint8_t *)fields[i].bytes)[0]==0xA0)certField=fields[i];
+        if(((const uint8_t *)((NSData *)fields[i]).bytes)[0]==0xA0)certField=fields[i];
         if(((const uint8_t *)fields[i].bytes)[0]==0x31)signerField=fields[i];
     }
     if(!certField||!signerField){if(error)*error=ASVErr(8,@"缺少证书集合或 SignerInfo");return nil;}
@@ -163,7 +163,7 @@ static BOOL ASVHasOID(NSData *tlv, const uint8_t *oid, NSUInteger oidLen) {
     }
     if(signers.count!=1){if(error)*error=ASVErr(9,@"当前验证器要求恰好一个签名者");return nil;}
     NSArray *si=ASVChildren(signers[0],0x30);
-    if(si.count!=6||((const uint8_t *)si[3].bytes)[0]!=0xA0){if(error)*error=ASVErr(10,@"SignerInfo/signedAttrs 结构错误");return nil;}
+    if(si.count!=6||((const uint8_t *)((NSData *)si[3]).bytes)[0]!=0xA0){if(error)*error=ASVErr(10,@"SignerInfo/signedAttrs 结构错误");return nil;}
     NSUInteger sivb=0;ASVTLV siv;
     if(!ASVGet(si[0],&siv,&sivb)||siv.tag!=0x02||
        ![ASVBody(si[0],siv,sivb) isEqual:[NSData dataWithBytes:"\x01" length:1]]) {
@@ -228,7 +228,7 @@ static BOOL ASVHasOID(NSData *tlv, const uint8_t *oid, NSUInteger oidLen) {
     const uint8_t rsaOID[]={0x2A,0x86,0x48,0x86,0xF7,0x0D,0x01,0x01,0x01};
     const uint8_t ecOID[]={0x2A,0x86,0x48,0xCE,0x3D,0x04,0x03,0x02};
     if([oid isEqual:[NSData dataWithBytes:rsaOID length:sizeof(rsaOID)]]) {
-        if(sigAlg.count!=2||((const uint8_t *)sigAlg[1].bytes)[0]!=0x05) {
+        if(sigAlg.count!=2||((const uint8_t *)((NSData *)sigAlg[1]).bytes)[0]!=0x05) {
             CFRelease(pub);if(error)*error=ASVErr(32,@"rsaEncryption 参数必须为 NULL");return nil;
         }
     } else if([oid isEqual:[NSData dataWithBytes:ecOID length:sizeof(ecOID)]]) {
