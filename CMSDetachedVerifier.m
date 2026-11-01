@@ -37,9 +37,6 @@ static BOOL ASVGet(NSData *d, ASVTLV *v, NSUInteger *body) {
 static NSData *ASVBody(NSData *d, ASVTLV v, NSUInteger body) {
     return [d subdataWithRange:NSMakeRange(body,v.length)];
 }
-static NSData *ASVRetag(NSData *d,uint8_t tag) {
-    NSMutableData *m=[d mutableCopy];((uint8_t *)m.mutableBytes)[0]=tag;return m;
-}
 static NSData *ASVFindAttribute(NSData *attrs, const uint8_t *oid, NSUInteger oidLen, uint8_t valueTag) {
     NSArray *items=ASVChildren(attrs,0x31); if(!items)return nil;
     NSData *target=[NSData dataWithBytes:oid length:oidLen];
