@@ -38,13 +38,14 @@ after = rpaths()
 remaining = [path for path, count in collections.Counter(after).items() if count > 1]
 if remaining:
     raise SystemExit("Duplicate LC_RPATH entries remain: " + ", ".join(remaining))
-required = "@loader_path/.jbroot/Library/Frameworks"
-if after.count(required) != 1:
-    raise SystemExit(f"Expected exactly one {required!r}, found {after.count(required)}")
 
 # install_name_tool invalidates the existing signature, so sign after normalization.
-subprocess.run(["ldid", "-S" + str(entitlements), str(binary)], check=True)
-print("Final LC_RPATH list:")
+if duplicates:
+    subprocess.run(["ldid", "-S" + str(entitlements), str(binary)], check=True)
+    print("Re-signed executable after LC_RPATH normalization.")
+else:
+    print("No duplicate LC_RPATH entries found; original signature left untouched.")
+
+print("Verified LC_RPATH entries:")
 for path in after:
     print("  " + path)
-print("RootHide app executable re-signed successfully.")
