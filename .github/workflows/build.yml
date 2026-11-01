@@ -2,7 +2,7 @@ name: Build AppleSigner (RootHide Theos)
 
 on:
   push:
-    branches: [main, roothide]
+    branches: [main, roothide, roothide-rewrite]
     paths:
       - '**/*.m'
       - '**/*.h'
