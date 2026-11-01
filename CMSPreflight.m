@@ -26,7 +26,7 @@ static NSError *ASCMSError(NSInteger code, NSString *message) {
     NSDictionary *entry = (__bridge NSDictionary *)CFArrayGetValueAtIndex(imported, 0);
     SecIdentityRef identity = (__bridge SecIdentityRef)entry[(__bridge id)kSecImportItemIdentity];
     NSArray *chain = entry[(__bridge id)kSecImportItemCertChain];
-    SecCertificateRef leaf = chain.firstObject;
+    SecCertificateRef leaf = chain.firstObject ? (__bridge SecCertificateRef)chain.firstObject : NULL;
     SecKeyRef privateKey = NULL;
     status = identity ? SecIdentityCopyPrivateKey(identity, &privateKey) : errSecItemNotFound;
     if (status != errSecSuccess || !privateKey || !leaf) {
