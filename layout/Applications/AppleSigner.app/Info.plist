@@ -1,0 +1,13 @@
+{
+    CFBundleDevelopmentRegion = English;
+    CFBundleExecutable = AppleSigner;
+    CFBundleIdentifier = com.applesigner.app;
+    CFBundleInfoDictionaryVersion = 6.0;
+    CFBundleName = AppleSigner;
+    CFBundlePackageType = APPL;
+    CFBundleShortVersionString = 1.14.0;
+    CFBundleVersion = 114;
+    LSRequiresIPhoneOS = true;
+    UILaunchScreen = {};
+    UISupportedInterfaceOrientations = (UIInterfaceOrientationPortrait);
+}

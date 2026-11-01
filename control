@@ -1,0 +1,9 @@
+Package: com.applesigner.app
+Name: AppleSigner
+Version: 1.41.0
+Architecture: iphoneos-arm64
+Description: Rootless jailbreak IPA signing manager.
+Maintainer: AppleSigner
+Author: AppleSigner
+Section: Applications
+Depends: firmware (>= 15.0)
