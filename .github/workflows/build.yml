@@ -1,15 +1,15 @@
-name: Build AppleSigner (Theos)
+name: Build AppleSigner (RootHide Theos)
 
 on:
   push:
-    branches: [main]
+    branches: [main, roothide]
     paths:
       - '**/*.m'
       - '**/*.h'
       - 'Makefile'
       - 'control'
       - 'layout/**'
-      - 'AppleSigner-1.41.0-source.zip'
+      - 'roothide.entitlements'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
@@ -23,42 +23,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Theos
-        uses: waruhachi/theos-action@v2.6.3
-        with:
-          theos-src: 'theos/theos'
-          theos-branch: 'master'
-          sdks-src: 'theos/sdks'
-          sdks-branch: 'master'
-          remotelog: false
-          libgcuniversal: false
-          altlist: false
-          comet: false
-          orion: false
-
-      - name: Prepare source
+      - name: Install RootHide Theos
         shell: bash
         run: |
-          if [[ -f AppleSigner-1.41.0-source.zip ]]; then
-            mkdir -p "$RUNNER_TEMP/applesigner-src"
-            unzip -q AppleSigner-1.41.0-source.zip -d "$RUNNER_TEMP/applesigner-src"
-            makefile="$(find "$RUNNER_TEMP/applesigner-src" -name Makefile -type f -print -quit)"
-            test -n "$makefile"
-            cp -R "$(dirname "$makefile")/." .
-          fi
-          test -f Makefile
-          test -f control
-          echo "Source files:"
-          ls -la
+          xcode-select -p
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/roothide/theos/master/bin/install-theos)"
+          test -f "$HOME/theos/makefiles/common.mk"
+          echo "$HOME/theos/bin" >> "$GITHUB_PATH"
 
-      - name: Build rootless package
+      - name: Verify RootHide build configuration
         run: |
-          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          grep -q 'THEOS_PACKAGE_SCHEME = roothide' Makefile
+          grep -q 'Architecture: iphoneos-arm64e' control
+          test -f roothide.entitlements
 
-      - name: Upload Debian package
+      - name: Build RootHide package
+        run: |
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
+          test -n "$(find packages -maxdepth 1 -name '*.deb' -print -quit)"
+
+      - name: Upload RootHide Debian package
         uses: actions/upload-artifact@v4
         with:
-          name: AppleSigner-rootless-deb
+          name: AppleSigner-roothide-deb
           path: packages/*.deb
           if-no-files-found: error
           retention-days: 14
