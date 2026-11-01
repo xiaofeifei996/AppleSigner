@@ -120,7 +120,7 @@ static BOOL ASVHasOID(NSData *tlv, const uint8_t *oid, NSUInteger oidLen) {
     NSArray *ci=ASVChildren(cms,0x30);
     if(ci.count!=2){if(error)*error=ASVErr(2,@"ContentInfo 结构错误");return nil;}
     const uint8_t signedOID[]={0x2A,0x86,0x48,0x86,0xF7,0x0D,0x01,0x07,0x02};
-    NSUInteger o=0;ASVTLV t;NSUInteger b;
+    ASVTLV t;NSUInteger b;
     if(!ASVGet(ci[0],&t,&b)||t.tag!=0x06||
        ![ASVBody(ci[0],t,b) isEqual:[NSData dataWithBytes:signedOID length:sizeof(signedOID)]]){
         if(error)*error=ASVErr(3,@"不是 CMS SignedData");return nil;
@@ -154,7 +154,7 @@ static BOOL ASVHasOID(NSData *tlv, const uint8_t *oid, NSUInteger oidLen) {
     NSData *certField=nil,*signerField=nil;
     for(NSUInteger i=3;i<fields.count;i++){
         if(((const uint8_t *)((NSData *)fields[i]).bytes)[0]==0xA0)certField=fields[i];
-        if(((const uint8_t *)fields[i].bytes)[0]==0x31)signerField=fields[i];
+        if(((const uint8_t *)((NSData *)fields[i]).bytes)[0]==0x31)signerField=fields[i];
     }
     if(!certField||!signerField){if(error)*error=ASVErr(8,@"缺少证书集合或 SignerInfo");return nil;}
     NSArray *signers=ASVChildren(signerField,0x31);
