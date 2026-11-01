@@ -1,0 +1,67 @@
+name: Build AppleSigner (Theos)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'AppleSigner-1.41.0-source.zip'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check source archive
+        id: source
+        shell: bash
+        run: |
+          if [[ -f AppleSigner-1.41.0-source.zip ]]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Source archive not found. Upload AppleSigner-1.41.0-source.zip to the repository root to enable compilation."
+          fi
+
+      - name: Setup Theos
+        if: steps.source.outputs.present == 'true'
+        uses: waruhachi/theos-action@v2.6.3
+        with:
+          theos-src: 'theos/theos'
+          theos-branch: 'master'
+          sdks-src: 'theos/sdks'
+          sdks-branch: 'master'
+          remotelog: false
+          libgcuniversal: false
+          altlist: false
+          comet: false
+          orion: false
+
+      - name: Prepare source
+        if: steps.source.outputs.present == 'true'
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/applesigner-src"
+          unzip -q AppleSigner-1.41.0-source.zip -d "$RUNNER_TEMP/applesigner-src"
+          test -f "$RUNNER_TEMP/applesigner-src/AppleSigner-1.41.0/Makefile"
+          cp -R "$RUNNER_TEMP/applesigner-src/AppleSigner-1.41.0/." .
+
+      - name: Build rootless package
+        if: steps.source.outputs.present == 'true'
+        run: |
+          make clean package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+
+      - name: Upload Debian package
+        if: steps.source.outputs.present == 'true' && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AppleSigner-1.41.0-rootless-deb
+          path: packages/*.deb
+          if-no-files-found: error
+          retention-days: 14
